@@ -1,0 +1,65 @@
+This is something of a short walk-through for the FFE saved game file format.
+It's mostly for those wishing to hack on these utilities or those creating
+their own.
+
+The FFE saved game file format consists of two sections at the highest level:
+the unscrambled section and the scrambled section. These utilities refer
+to the unscrambled section as block 5, and split the scrambled section into
+five constant-size blocks labelled blocks 0 through 4.
+
+I have little information on the unscrambled section, but Mr. Jordan tells me
+it contains information about the hand-coded missions and the state of the
+news papers. The titles of the news papers are clearly visible near the
+beginning of the section in plain ASCII, but the offset between them is
+variable. For more information, you'll have to speak nicely to Mr. Jordan.
+
+The scrambled section is much more fun. The scramling itself is simple
+iterative XOR over 16-bit chunks. I won't explain the whole algorithm here
+(hopefully the code is explicit enough), but the gist is: XOR 16-bits of
+the data with the "magic key" (tech. term), add the original 16-bits to the
+magic key, double the magic key and move on to the next 16-bits. The initial
+value of the magic key is (0x12345678 + (0xef0a & -0x2)), or 0x12354582.
+When all of the data has been scrambled, the resulting magic key is appended
+data and used later as a CRC by the descrambler to check for corruption.
+
+The first dword of the to-be-scrambled data is always 0x11. Thus the first
+dword of the scrambled section is always 0x8B264593. This allows us to find
+the scrambled section without knowing the structure of the unscrambled
+section (which is variable in size). In case the same dword crops up in the
+unscrambled section, the unmangle utility will search again for the dword
+if the CRC fails.
+
+Of the five blocks in the scrambled section, blocks 0, 3 and 4 are compressed
+prior to the scrambling. The compression is simple, it replaces consecutive
+N bytes of value 0x0 with a single byte of 0x0 followed by a single byte of
+value N - 1. E.g.:
+
+01 00 00 00 03 04  ->  01 00 02 03 04
+
+In particular, note that isolated zeros result in negative compression:
+
+01 00 02  ->  01 00 00 02
+
+The benefits of the compression almost always out number the cost of the
+negative compression though.
+
+Once descrambled and decompressed, the section is split up as:
+
+0x984A bytes (block 0)
+0x100 bytes (block 1)
+0x40 bytes (block 2)
+0x556A bytes (block 3)
+0x51 bytes (block 4)
+0x1 byte padding (optional)
+
+The padding byte is only added if the size of the section prior to scrambling
+(but after compression) is odd. The value of the padding is not constant,
+it seems to use whatever happened to be in the memory location at that time.
+The unmangle utility copies the padding byte (if there is one, 0x0 otherwise)
+since its value affects the CRC. (Which doesn't make any difference as far
+as FFE is concerned, but if the output of unmangle is unmodified before
+passing it through mangle, it's better if it produces an exact copy of the
+original saved game file.)
+
+I think that about covers it. If you have questions just ask them.
+

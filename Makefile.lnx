@@ -1,0 +1,28 @@
+PROGRAMMES = mangle unmangle
+
+mangle_SOURCES = mangle.c
+mangle_OBJECTS = $(mangle_SOURCES:%.c=%.o)
+
+unmangle_SOURCES = unmangle.c
+unmangle_OBJECTS = $(unmangle_SOURCES:%.c=%.o)
+
+CC = gcc
+CFLAGS = -Wall -O2
+
+all: $(PROGRAMMES)
+
+clean:
+	rm -f $(PROGRAMMES)
+	rm -f $(mangle_OBJECTS)
+	rm -f $(unmangle_OBJECTS)
+
+mangle: $(mangle_OBJECTS)
+	$(CC) $(CFLAGS) $^ -o $@
+
+unmangle: $(unmangle_OBJECTS)
+	$(CC) $(CFLAGS) $^ -o $@
+
+mangle.o: common.h
+
+unmangle.o: common.h
+

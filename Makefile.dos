@@ -1,0 +1,28 @@
+PROGRAMMES = mangle.exe unmangle.exe
+
+mangle_SOURCES = mangle.c
+mangle_OBJECTS = $(mangle_SOURCES:%.c=%.o)
+
+unmangle_SOURCES = unmangle.c
+unmangle_OBJECTS = $(unmangle_SOURCES:%.c=%.o)
+
+CC = gcc
+CFLAGS = -Wall -O2
+
+all: $(PROGRAMMES)
+
+clean:
+	del $(PROGRAMMES)
+	del $(mangle_OBJECTS)
+	del $(unmangle_OBJECTS)
+
+mangle.exe: $(mangle_OBJECTS)
+	$(CC) $(CFLAGS) $^ -o $@
+
+unmangle.exe: $(unmangle_OBJECTS)
+	$(CC) $(CFLAGS) $^ -o $@
+
+mangle.o: common.h
+
+unmangle.o: common.h
+
